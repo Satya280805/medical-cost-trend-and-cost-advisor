@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Trend2Action Platform{% endblock %}
+
+{% block content %}
+<div class="dashboard-view">
+  <!-- Content Header -->
+  <div class="content-header">
+    <div class="header-title-block">
+      <h1>Dashboard</h1>
+    </div>
+    <div class="header-meta" style="display: flex; align-items: center; gap: 12px;">
+      <button type="button" class="btn-primary" onclick="window.print()" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 7px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+        <span>Export Brief</span>
+      </button>
+
+      <!-- User Profile Photo Avatar with Clickable Dropdown -->
+      <div class="user-profile-dropdown-wrapper">
+        <button type="button" class="user-avatar-btn" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Account menu">
+          <i class="fa-solid fa-user"></i>
+        </button>
+
+        <div class="profile-dropdown-menu" id="profileDropdownMenu">
+          <div class="dropdown-user-header">
+            <div class="dropdown-avatar-circle">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="dropdown-user-info">
+              <div class="dropdown-user-name">{{ current_user.username | default(session.get('user_name', 'User')) }}</div>
+              <div class="dropdown-user-email"><i class="fa-solid fa-envelope"></i> {{ current_user.username | default(session.get('user_name', 'user')) }}@medical.com</div>
+            </div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a href="{{ url_for('logout') }}" class="dropdown-item dropdown-item-logout">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards Grid -->
+  <div class="grid-4">
+    <!-- KPI 1 -->
+    <div class="card kpi-card">
+      <div class="kpi-title">Total Medical Cost</div>
+      <div class="kpi-value">₹ {{ metrics.total_cost_cr | default('10.80') }} Cr</div>
+      <div class="kpi-change up-green">
+        <i class="fa-solid fa-arrow-up"></i>
+        <span>9.2% vs last year</span>
+      </div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="card kpi-card">
+      <div class="kpi-title">YoY Growth</div>
+      <div class="kpi-value">{{ metrics.yoy_growth | default('9.20%') }}</div>
+      <div class="kpi-change up-green">
+        <i class="fa-solid fa-arrow-up"></i>
+        <span>1.3% vs last year</span>
+      </div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="card kpi-card">
+      <div class="kpi-title">2027 Forecast (Uncontained)</div>
+      <div class="kpi-value">₹ {{ metrics.forecast_2027_cr | default('12.80') }} Cr</div>
+      <div class="kpi-change up-blue">
+        <i class="fa-solid fa-arrow-up"></i>
+        <span>11.4% vs 2026</span>
+      </div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="card kpi-card risk-high">
+      <div class="kpi-title">Cost Pressure Score</div>
+      <div class="kpi-value" style="color: #dc2626;">82 <span style="font-size: 16px; font-weight: 500; color: #64748b;">/ 100</span></div>
+      <div class="kpi-change danger">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>HIGH RISK</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Row: Charts -->
+  <div class="grid-2-1">
+    <!-- Trend Chart -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Medical Cost Trend</div>
+        <div class="card-subtitle">
+          <span style="display:inline-block; width:10px; height:10px; background:#2563eb; border-radius:50%; margin-right:4px;"></span> Actual
+          <span style="display:inline-block; width:10px; height:10px; background:#93c5fd; border-radius:50%; margin: 0 4px 0 12px;"></span> Forecast
+        </div>
+      </div>
+      <div style="height: 250px;">
+        <canvas id="costTrendChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Drivers Contribution Donut -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Cost Drivers Contribution</div>
+      </div>
+      <div style="height: 250px; position: relative;">
+        <canvas id="driversDonutChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Row: Dedicated Warning Pane & Insights -->
+  <div class="grid-2">
+    <!-- Dedicated Early-Warning Alerts Pane -->
+    <div class="card" style="border-top: 3px solid #f97316; display: flex; flex-direction: column;">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="card-title" style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-triangle-exclamation" style="color: #f97316;"></i>
+          <span>Medical Economics Early-Warning</span>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">
+          High Risk Alert
+        </span>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #fed7aa; border-radius: var(--radius-sm, 6px); padding: 14px 16px; margin-bottom: 14px;">
+        <div style="font-size: 13.5px; font-weight: 700; color: #9a3412; margin-bottom: 6px;">
+          Emerging Cost Pressure Detected
+        </div>
+        <p style="font-size: 12.5px; color: #7c2d12; margin: 0 0 10px 0; line-height: 1.5;">
+          High-cost specialty drugs (+15% YoY) and inpatient site-of-care shifts indicate an upcoming <strong style="color: #9a3412;">₹ 1.30 Cr (+11.3%)</strong> budget variance. Action recommended before budget overrun becomes irreversible.
+        </p>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <a href="{{ url_for('what_if') }}" class="btn-primary" style="background: #ea580c; padding: 7px 14px; font-size: 12px; border-radius: var(--radius-sm); text-decoration: none; box-shadow: none; display: inline-flex; align-items: center; gap: 6px;">
+            <span>Simulate Levers</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </a>
+          <span style="font-size: 11.5px; color: #9a3412; font-weight: 600;">
+            Projected Variance: +₹ 1.30 Cr
+          </span>
+        </div>
+      </div>
+
+      <ul class="insights-list" style="font-size: 12px; margin-top: auto;">
+        <li><strong>Trigger 1:</strong> Specialty oncology & immunology therapies rising +15% YoY</li>
+        <li><strong>Trigger 2:</strong> 4.2% shift from ambulatory surgery centers to acute inpatient care</li>
+      </ul>
+    </div>
+
+    <!-- Cost Pressure Breakdown (5 Core Inputs) -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Cost Pressure Breakdown</div>
+      </div>
+      <div class="progress-list">
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span>High-Cost Drugs</span>
+            <span style="font-weight: 700; color:#dc2626;">91/100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill bg-red" style="width: 91%;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span>Utilization Shifts</span>
+            <span style="font-weight: 700;">82/100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill bg-teal" style="width: 82%;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span>Site-of-Care Patterns</span>
+            <span style="font-weight: 700;">76/100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill bg-blue" style="width: 76%;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span>Unit Cost Changes</span>
+            <span style="font-weight: 700;">72/100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill bg-orange" style="width: 72%;"></div>
+          </div>
+        </div>
+
+        <div class="progress-item">
+          <div class="progress-label-row">
+            <span>Provider Mix Shifts</span>
+            <span style="font-weight: 700;">61/100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill bg-purple" style="width: 61%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Top Insights -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Top Trend Insights</div>
+      </div>
+      <ul class="insights-list">
+        <li><strong>High Cost Drugs:</strong> Specialty drug spend rose by +15% YoY</li>
+        <li><strong>Site-of-Care:</strong> Inpatient admission shift driving elevated unit rates</li>
+        <li><strong>Utilization:</strong> Avoidable ER visits surged +8% YoY</li>
+        <li><strong>Provider Mix:</strong> Referral shift toward high-cost specialist health systems</li>
+        <li><strong>Unit Cost:</strong> Facility fee inflation adding +₹ 15.00 L cost pressure</li>
+      </ul>
+    </div>
+
+    <!-- Recommended Actions -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recommended Levers</div>
+      </div>
+      <ul class="actions-list">
+        <li>Enforce specialty drug prior-auth & biosimilars</li>
+        <li>Redirect inpatient care to ambulatory centers</li>
+        <li>Implement emergency room diversion pathways</li>
+        <li>Optimize tiered high-value provider network</li>
+      </ul>
+      <a href="{{ url_for('advisor') }}" class="card-link">
+        <span>View All Containment Levers</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initDashboardCharts();
+  });
+</script>
+{% endblock %}

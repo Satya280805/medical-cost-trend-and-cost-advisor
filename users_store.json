@@ -1,0 +1,42 @@
+{
+  "shiva_leader": {
+    "id": 1,
+    "username": "shiva_leader",
+    "password_hash": "scrypt:32768:8:1$EFuNraHjkUvO5uK0$4c6b82b52a15a25ad1312b16424c6cc033ed269de07b1c6f5e3a54d55816a0d660a20ea8712644638342bb0e8231e617be5576b8e5fbcbe85b53c2fc10947167"
+  },
+  "shivakumar@0786": {
+    "id": 2,
+    "username": "shivakumar@0786",
+    "password_hash": "scrypt:32768:8:1$h1Oh0bgaegXHcfdv$43827e4e22e0e1f950d8f37d5d2ecd69272bb5aeb04e9c49b88a3fd5c48083cc627d3867a129ea4a8ee6cbb0f2e5a975a7159629f0b6ddc82de0fdb36db93676"
+  },
+  "nani0786": {
+    "id": 3,
+    "username": "nani0786",
+    "password_hash": "scrypt:32768:8:1$e7zQFM6ukiwb2eU8$2707a30439c4e25885643654ef0331c1cdfde17d37d07d400d116b545229f114e63c92608a65ee130590c479fb24f85501053270ee304d3fa70ad64eb50d78ee"
+  },
+  "nalimelashivakumar0786@gamil.com": {
+    "id": 4,
+    "username": "nalimelashivakumar0786@gamil.com",
+    "password_hash": "scrypt:32768:8:1$2wyd0RBvIwiv7YAr$dad9093d31d9018de094a014dc96f139deb6a8f4fc71cdc88ac43a495c3e08429c7db7c7aa39805226a1fd167073c1b0a84112e8e04bf368fcff4b2f504bfbc5"
+  },
+  "shivakumar": {
+    "id": 5,
+    "username": "shivakumar",
+    "password_hash": "scrypt:32768:8:1$auVcFc8Gw2ig5Sp0$c3c071c6059da4d88431cf8315403985fbe94aa7a698fafc45ffc1b1fccf165dfbc31e2be1fae5ec1ae42ebd7ef7a230c98305bce86bdab8362f3300aef2b32b"
+  },
+  "nani07862": {
+    "id": 6,
+    "username": "nani07862",
+    "password_hash": "scrypt:32768:8:1$pXnagxG3do5XpziB$e7e02e9891c7c7ed3e18d5b1b7053a2d44259bc982aebc7dcbcab0c01581df5cf2ce68d16397934db431327e9c0e0624636da0da92d769e1a0335fd5ee84aa29"
+  },
+  "demouser99": {
+    "id": 7,
+    "username": "demouser99",
+    "password_hash": "scrypt:32768:8:1$OoDPPDImsx2MzmrI$c885d42f184f97ff7650ae9bb16ca580ae73ab7021f598328c5c092bda5f4621bbf0569213c3048a9387690cabe0a064fa19a093887f0b23e335067905e02993"
+  },
+  "admin": {
+    "id": 8,
+    "username": "admin",
+    "password_hash": "scrypt:32768:8:1$yooC2aHIYJYsWWug$e29f860b4765ad679633d6990cfb331f00afd92fa6078f1dd7e61df3f2cfd8c121de353a8b299fa45ea03da59cfb6fbf374e788eebc1cf749e995304fb4659c7"
+  }
+}

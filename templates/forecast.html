@@ -1,0 +1,663 @@
+{% extends "base.html" %}
+
+{% block title %}Medical Cost Forecast & AI Prediction - Trend2Action Platform{% endblock %}
+
+{% block content %}
+<div class="forecast-view">
+
+  <!-- Content Header -->
+  <div class="content-header">
+    <div class="header-title-block">
+      <h1>AI Medical Cost Prediction & 2027 Forecast</h1>
+      <p>Estimate individual member monthly costs using trained machine learning models and explore macro 2027 expenditure forecasts</p>
+    </div>
+    <div class="header-meta" style="display: flex; align-items: center; gap: 12px;">
+      <button type="button" class="btn-primary" onclick="window.print()" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 7px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
+        <span>Export Brief</span>
+      </button>
+
+      <!-- User Profile Photo Avatar with Clickable Dropdown -->
+      <div class="user-profile-dropdown-wrapper">
+        <button type="button" class="user-avatar-btn" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Account menu">
+          <i class="fa-solid fa-user"></i>
+        </button>
+
+        <div class="profile-dropdown-menu" id="profileDropdownMenu">
+          <div class="dropdown-user-header">
+            <div class="dropdown-avatar-circle">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="dropdown-user-info">
+              <div class="dropdown-user-name">{{ current_user.username | default(session.get('user_name', 'User')) }}</div>
+              <div class="dropdown-user-email"><i class="fa-solid fa-envelope"></i> {{ current_user.username | default(session.get('user_name', 'user')) }}@medical.com</div>
+            </div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a href="{{ url_for('logout') }}" class="dropdown-item dropdown-item-logout">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- 1. AI COST PREDICTION (PLACED FIRST AT TOP)          -->
+  <!-- ===================================================== -->
+  <div class="prediction-section" style="margin-top: 0; padding-top: 0; border-top: none;">
+    <div class="prediction-header">
+      <div>
+        <h2>
+          <i class="fa-solid fa-brain"></i>
+          AI Medical Cost Prediction
+        </h2>
+        <p>Enter patient, healthcare utilization, insurance, and treatment parameters to estimate the monthly medical cost via trained Stacking Regressor.</p>
+      </div>
+      <span class="ml-badge">
+        <i class="fa-solid fa-layer-group"></i> Stacking ML Ensemble
+      </span>
+    </div>
+
+    <!-- FULL-WIDTH INPUT FORM & REAL-TIME PREDICTION -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <div class="card-title">Patient & Healthcare Information</div>
+      </div>
+
+      <form id="predictionForm" novalidate>
+        <!-- BASIC INFORMATION -->
+        <div class="prediction-subheading">
+          <i class="fa-solid fa-user"></i>
+          Basic Information
+        </div>
+
+        <div class="prediction-form-grid">
+          <div class="prediction-field">
+            <label for="age">Age</label>
+            <input type="number" id="age" min="1" max="120" step="1" value="45" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="bmi">BMI</label>
+            <input type="number" id="bmi" min="10" max="70" step="0.1" value="27.5" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="gender">Gender</label>
+            <select id="gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="smoking_status">Smoking Status</label>
+            <select id="smoking_status">
+              <option value="Never">Never</option>
+              <option value="Former">Former</option>
+              <option value="Current">Current</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="physical_activity">Physical Activity</label>
+            <select id="physical_activity">
+              <option value="Low">Low</option>
+              <option value="Moderate" selected>Moderate</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="stress_level">Stress Level</label>
+            <select id="stress_level">
+              <option value="Low" selected>Low</option>
+              <option value="Moderate">Moderate</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- MEDICAL CONDITIONS -->
+        <div class="prediction-subheading">
+          <i class="fa-solid fa-heart-pulse"></i>
+          Medical Conditions
+        </div>
+
+        <div class="prediction-form-grid">
+          <div class="prediction-field">
+            <label for="diabetes">Diabetes</label>
+            <select id="diabetes">
+              <option value="0" selected>No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="hypertension">Hypertension</label>
+            <select id="hypertension">
+              <option value="0">No</option>
+              <option value="1" selected>Yes</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="heart_disease">Heart Disease</label>
+            <select id="heart_disease">
+              <option value="0" selected>No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="asthma">Asthma</label>
+            <select id="asthma">
+              <option value="0" selected>No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="daily_steps">Daily Steps</label>
+            <input type="number" id="daily_steps" min="0" max="50000" step="100" value="6500" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="sleep_hours">Sleep Hours/Night</label>
+            <input type="number" id="sleep_hours" min="0" max="24" step="0.5" value="7" required>
+          </div>
+        </div>
+
+        <!-- HEALTHCARE UTILIZATION -->
+        <div class="prediction-subheading">
+          <i class="fa-solid fa-hospital-user"></i>
+          Healthcare Utilization (Past Year)
+        </div>
+
+        <div class="prediction-form-grid">
+          <div class="prediction-field">
+            <label for="doctor_visits">Doctor Visits</label>
+            <input type="number" id="doctor_visits" min="0" max="100" step="1" value="3" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="hospital_admissions">Hospital Admissions</label>
+            <input type="number" id="hospital_admissions" min="0" max="50" step="1" value="1" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="emergency_visits">Emergency Visits</label>
+            <input type="number" id="emergency_visits" min="0" max="50" step="1" value="0" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="specialist_visits">Specialist Visits</label>
+            <input type="number" id="specialist_visits" min="0" max="50" step="1" value="2" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="lab_tests">Lab Tests</label>
+            <input type="number" id="lab_tests" min="0" max="100" step="1" value="4" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="medication_count">Prescription Count</label>
+            <input type="number" id="medication_count" min="0" max="50" step="1" value="3" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="average_length_of_stay_days">Avg. Length of Stay (Days)</label>
+            <input type="number" id="average_length_of_stay_days" min="0" max="365" step="0.5" value="2" required>
+          </div>
+        </div>
+
+        <!-- INSURANCE & PLAN DETAILS -->
+        <div class="prediction-subheading">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          Insurance & Plan Details
+        </div>
+
+        <div class="prediction-form-grid">
+          <div class="prediction-field">
+            <label for="insurance_type">Insurance Type</label>
+            <select id="insurance_type">
+              <option value="Private" selected>Private</option>
+              <option value="Corporate">Corporate</option>
+              <option value="Government">Government</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="insurance_coverage_percent">Coverage (%)</label>
+            <input type="number" id="insurance_coverage_percent" min="0" max="100" step="1" value="80" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="city_type">City Type</label>
+            <select id="city_type">
+              <option value="Metro">Metro</option>
+              <option value="Urban" selected>Urban</option>
+              <option value="Semi-Urban">Semi-Urban</option>
+              <option value="Rural">Rural</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="previous_year_medical_cost">Prev. Year Spend (₹)</label>
+            <input type="number" id="previous_year_medical_cost" min="0" step="100" value="60000" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="out_of_network_rate">Out-of-Network Rate (%)</label>
+            <input type="number" id="out_of_network_rate" min="0" max="100" step="0.1" value="10" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="generic_rate">Generic Rate (%)</label>
+            <input type="number" id="generic_rate" min="0" max="100" step="0.1" value="75" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="pharmacy_spend">Pharmacy Spend (₹)</label>
+            <input type="number" id="pharmacy_spend" min="0" step="0.01" value="5000" required>
+          </div>
+        </div>
+
+        <!-- PROVIDER & TREATMENT -->
+        <div class="prediction-subheading">
+          <i class="fa-solid fa-user-doctor"></i>
+          Provider & Treatment Information
+        </div>
+
+        <div class="prediction-form-grid">
+          <div class="prediction-field">
+            <label for="site_of_care">Site of Care</label>
+            <select id="site_of_care">
+              <option value="Outpatient" selected>Outpatient</option>
+              <option value="Inpatient">Inpatient</option>
+              <option value="Emergency">Emergency</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="provider_type">Provider Type</label>
+            <select id="provider_type">
+              <option value="Hospital" selected>Hospital</option>
+              <option value="Clinic">Clinic</option>
+              <option value="Specialist">Specialist</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="provider_mix_index">Provider Mix Index</label>
+            <input type="number" id="provider_mix_index" min="0" step="0.01" value="1.1" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="unit_cost">Unit Cost (₹)</label>
+            <input type="number" id="unit_cost" min="0" step="0.01" value="1000" required>
+          </div>
+
+          <div class="prediction-field">
+            <label for="drug_category">Drug Category</label>
+            <select id="drug_category">
+              <option value="Generic" selected>Generic</option>
+              <option value="Brand">Brand</option>
+              <option value="Specialty">Specialty</option>
+            </select>
+          </div>
+
+          <div class="prediction-field">
+            <label for="drug_cost">Drug Cost (₹)</label>
+            <input type="number" id="drug_cost" min="0" step="0.01" value="500" required>
+          </div>
+        </div>
+
+        <!-- PREDICTION DATE -->
+        <div class="prediction-subheading">
+          <i class="fa-solid fa-calendar"></i>
+          Forecast Period
+        </div>
+
+        <div class="prediction-form-grid">
+          <div class="prediction-field" style="grid-column: 1 / -1;">
+            <label for="prediction_month" style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">
+              <i class="fa-regular fa-calendar" style="color: var(--accent-blue); margin-right: 4px;"></i>
+              Forecast Period & Benchmark Presets
+            </label>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <input type="month" id="prediction_month" value="2027-01" style="max-width: 190px; height: 38px; font-weight: 600;" onchange="updatePeriodChipActiveState(this.value);" required>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="periodChipsGroup">
+                <button type="button" class="btn-period-chip active" data-period="2027-01" onclick="setPeriodAndPredict('2027-01', this)">
+                  <i class="fa-solid fa-calendar-day"></i>
+                  <span>Jan 2027 (Baseline)</span>
+                </button>
+                <button type="button" class="btn-period-chip" data-period="2027-06" onclick="setPeriodAndPredict('2027-06', this)">
+                  <i class="fa-solid fa-chart-line"></i>
+                  <span>Jun 2027 (Mid-Year)</span>
+                </button>
+                <button type="button" class="btn-period-chip" data-period="2027-12" onclick="setPeriodAndPredict('2027-12', this)">
+                  <i class="fa-solid fa-fire-flame-curved"></i>
+                  <span>Dec 2027 (Q4 Peak)</span>
+                </button>
+                <button type="button" class="btn-period-chip" data-period="2028-06" onclick="setPeriodAndPredict('2028-06', this)">
+                  <i class="fa-solid fa-arrow-trend-up"></i>
+                  <span>2028 Projection</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PREDICTION STATUS & BUTTON -->
+        <div id="predictionStatus" class="prediction-status" role="status" aria-live="polite" style="display: none; padding: 10px; margin-top: 12px; font-size: 13px; font-weight: 500;"></div>
+
+        <div class="prediction-button-container" style="max-width: 480px; margin: 24px auto 0 auto;">
+          <button type="submit" class="prediction-button" id="predictButton">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Predict Medical Cost</span>
+          </button>
+        </div>
+
+        <!-- RESULT PANEL (PLACED DIRECTLY DOWN TO PREDICT BUTTON) -->
+        <div class="card prediction-result-card" style="margin-top: 28px; border-radius: var(--radius-md, 8px);">
+          <div class="prediction-result-icon">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+
+          <div class="prediction-result-title">
+            Predicted Monthly Medical Cost
+          </div>
+
+          <div id="predictionValue" class="prediction-value" aria-live="polite">
+            ₹ 16,394.94
+          </div>
+
+          <div id="predictionResultMessage" class="prediction-result-message" style="max-width: 600px; margin-left: auto; margin-right: auto;">
+            Click <strong>Predict Medical Cost</strong> to recalculate real-time forecast based on member parameters.
+          </div>
+
+          <div id="predictionCurrency" class="prediction-currency">
+            INR / MONTH
+          </div>
+
+          <!-- Direct CTA to Tailored Advisor Page -->
+          <a href="{{ url_for('advisor') }}?predicted_cost=16394.94" id="viewAdvisorBtn" class="btn-primary" style="margin-top: 16px; max-width: 380px; margin-left: auto; margin-right: auto; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: #0f172a; box-shadow: none;">
+            <i class="fa-solid fa-lightbulb"></i>
+            <span>View Full Advisor Strategy Page</span>
+            <i class="fa-solid fa-arrow-right" style="font-size: 11px;"></i>
+          </a>
+
+          <!-- Dynamic In-Page Advisor Options Container -->
+          <div id="predictedAdvisorContainer" style="display: none; max-width: 800px; margin: 0 auto;"></div>
+
+          <!-- Error Container -->
+          <div id="predictionError" class="prediction-error" style="display: none; margin-top: 14px; max-width: 600px; margin-left: auto; margin-right: auto;"></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 3 CARDS: MODEL ARCHITECTURE, HOW AI ESTIMATION WORKS, CLINICAL GUIDANCE (PLACED DOWN AFTER PREDICTED MONTHLY MEDICAL COST) -->
+    <div class="grid-3" style="margin-top: 24px; margin-bottom: 24px;">
+      <!-- Model Architecture Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-layer-group" style="color: var(--accent-blue); margin-right: 6px;"></i>
+            Model Architecture & Specs
+          </div>
+        </div>
+        <div class="prediction-model-info" style="border: none; padding: 0; background: transparent;">
+          <div>
+            <span>Architecture Type</span>
+            <strong>Production Stacking Ensemble</strong>
+          </div>
+          <div>
+            <span>Base Estimators</span>
+            <strong>Random Forest + GBM + HistGB</strong>
+          </div>
+          <div>
+            <span>Meta Estimator</span>
+            <strong>Ridge Regression (L2)</strong>
+          </div>
+          <div>
+            <span>Uncertainty Bounds</span>
+            <strong>80% Quantile Interval (P10–P90)</strong>
+          </div>
+          <div>
+            <span>Holdout Accuracy</span>
+            <strong>R² = 91.72% (RMSE: ₹ 3,642)</strong>
+          </div>
+          <div>
+            <span>Clinical Feature Space</span>
+            <strong>34 Actuarial & Interaction Metrics</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-circle-info" style="color: var(--accent-blue); margin-right: 6px;"></i>
+            How AI Estimation Works
+          </div>
+        </div>
+        <ul class="insights-list">
+          <li>Collects member clinical attributes, utilization history, and provider dynamics.</li>
+          <li>Applies categorical One-Hot Encoding and numerical StandardScaler transformations.</li>
+          <li>Feeds transformed vectors through the trained ensemble pipeline.</li>
+          <li>Outputs monthly medical spend projection with clinical risk tiering and personalized containment options.</li>
+        </ul>
+      </div>
+
+      <!-- Clinical Guidance & Spend Benchmarks Card -->
+      <div class="card" style="background: #f8fafc; border-left: 4px solid var(--accent-blue);">
+        <div class="card-header">
+          <div class="card-title" style="font-size: 13.5px;">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue); margin-right: 6px;"></i>
+            Clinical Spend Guidance
+          </div>
+        </div>
+        <p style="font-size: 12.5px; color: #64748b; line-height: 1.5; margin-bottom: 12px;">
+          Predictions automatically calibrate against macroeconomic inflation indices and provider contract tiers.
+        </p>
+        <div style="font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px;">
+            <span>Low-Cost Tier:</span>
+            <strong style="color: #16a34a;">&lt; ₹ 15,000 / mo</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px;">
+            <span>Moderate Tier:</span>
+            <strong style="color: #d97706;">₹ 15,000 – ₹ 30,000 / mo</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 2px;">
+            <span>High-Cost Risk Alert:</span>
+            <strong style="color: #dc2626;">&gt; ₹ 30,000 / mo</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- 2. MACRO MEDICAL COST FORECAST (DYNAMIC MULTI-YEAR)   -->
+  <!-- ===================================================== -->
+  <div style="margin-top: 40px; padding-top: 32px; border-top: 1px solid #e2e8f0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+      <div>
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-chart-line" style="color: var(--accent-blue);"></i>
+          <span id="macroForecastYearTitle">2027</span> Macro Medical Cost Forecast
+        </h2>
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">Macro enterprise spend projections across all membership segments with 95% statistical confidence bounds</p>
+      </div>
+
+      <!-- DYNAMIC CONTROLS: YEAR CHIPS, CUSTOM YEAR INPUT WITH FORECAST BUTTON, MONTH DROPDOWN & DATE PICKER -->
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Quick Horizon:</span>
+          <div style="display: flex; gap: 6px;" id="macroYearChips">
+            <button type="button" class="btn-tier-filter" data-year="2026" onclick="setMacroHorizonYear(2026, this)">2026</button>
+            <button type="button" class="btn-tier-filter active" data-year="2027" onclick="setMacroHorizonYear(2027, this)">2027</button>
+            <button type="button" class="btn-tier-filter" data-year="2028" onclick="setMacroHorizonYear(2028, this)">2028</button>
+            <button type="button" class="btn-tier-filter" data-year="2029" onclick="setMacroHorizonYear(2029, this)">2029</button>
+            <button type="button" class="btn-tier-filter" data-year="2030" onclick="setMacroHorizonYear(2030, this)">2030</button>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <!-- Custom Year Input & Forecast Button (Supports any year beyond 2030) -->
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm);">
+            <label for="customMacroYearInput" style="font-size: 12px; font-weight: 700; color: #1e293b; margin: 0;">Year:</label>
+            <input type="number" id="customMacroYearInput" min="2020" max="2050" step="1" value="2027" placeholder="e.g. 2032" style="width: 80px; height: 30px; font-size: 12.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid #94a3b8; outline: none;" onkeydown="if(event.key==='Enter'){event.preventDefault();submitCustomMacroForecast();}">
+            <button type="button" class="btn-primary" onclick="submitCustomMacroForecast()" id="btnMacroForecastSubmit" style="height: 30px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; border-radius: 4px; box-shadow: none;">
+              <i class="fa-solid fa-chart-line"></i>
+              <span>Forecast</span>
+            </button>
+          </div>
+
+          <span style="font-size: 12px; font-weight: 600; color: #64748b;">Month:</span>
+          <select id="macroMonthFilter" onchange="onMacroMonthDropdownChange(this.value)" style="font-size: 12.5px; padding: 5px 8px; height: 38px; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background: white; cursor: pointer;">
+            <option value="all">All 12 Months (Annual)</option>
+            <option value="1">January (Q1 Start)</option>
+            <option value="2">February</option>
+            <option value="3">March (Q1 Close)</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June (Mid-Year Benchmark)</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September (Q3 Close)</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December (Q4 Peak)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic KPI Cards -->
+    <div class="grid-4" style="margin-bottom: 24px;">
+      <div class="card kpi-card">
+        <div class="kpi-title" id="kpiTotalForecastTitle">Total Forecast (2027)</div>
+        <div class="kpi-value" id="kpiTotalForecastValue">₹ 12.80 Cr</div>
+        <div class="kpi-change up-blue" id="kpiTotalForecastVs">
+          <i class="fa-solid fa-arrow-up"></i>
+          <span id="kpiTotalForecastVsText">11.4% vs 2026</span>
+        </div>
+      </div>
+
+      <div class="card kpi-card">
+        <div class="kpi-title">Expected Growth (YoY)</div>
+        <div class="kpi-value" id="kpiGrowthValue" style="color: var(--accent-green);">11.40%</div>
+        <div class="kpi-change up-green" id="kpiGrowthSub">
+          <i class="fa-solid fa-arrow-up"></i>
+          <span id="kpiGrowthSubText">Specialty & Utilization Driven</span>
+        </div>
+      </div>
+
+      <div class="card kpi-card">
+        <div class="kpi-title">Forecast Range (95% CI)</div>
+        <div class="kpi-value" id="kpiRangeValue" style="font-size: 19px;">₹ 11.90 Cr - ₹ 13.70 Cr</div>
+        <div class="kpi-change up-blue" id="kpiRangeSub">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Tight Confidence Band</span>
+        </div>
+      </div>
+
+      <div class="card kpi-card">
+        <div class="kpi-title">Forecast Risk Status</div>
+        <div class="kpi-value" id="kpiRiskValue" style="color: var(--accent-red); font-weight: 800;">HIGH</div>
+        <div class="kpi-change danger" id="kpiRiskSub">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="kpiRiskSubText">Action Required</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Macro Forecast Horizon & Monthly Breakdown -->
+    <div class="grid-1-1">
+      <!-- Monthly Forecast Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" id="monthlyTableCardTitle">Monthly Forecast for 2027</div>
+          <div class="card-subtitle" id="monthlyTableSubtitle">Detailed monthly spend decomposition with upper/lower bounds</div>
+        </div>
+
+        <div style="overflow-x: auto; max-height: 440px;">
+          <table class="forecast-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Forecast Cost (₹ Cr)</th>
+                <th>Lower Band (₹ Cr)</th>
+                <th>Upper Band (₹ Cr)</th>
+              </tr>
+            </thead>
+            <tbody id="macroForecastTableBody">
+              <!-- Dynamically rendered via renderMacroTable() -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Forecast Horizon Chart & Summary -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" id="chartCardTitle">Monthly Trend Curve (2027)</div>
+            <div class="card-subtitle">
+              <span class="forecast-dot forecast-dot-blue"></span> Forecast
+              <span class="forecast-dot forecast-dot-light" style="margin-left: 10px;"></span> 95% Confidence Band
+            </div>
+          </div>
+          <div style="height: 240px;">
+            <canvas id="forecastHorizonChart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Forecast Summary & Budget Implications</div>
+          </div>
+          <ul class="insights-list" id="macroSummaryList">
+            <li>The total medical cost for 2027 is projected to reach <strong>₹ 12.80 Cr</strong> without policy intervention.</li>
+            <li>Expected inflation of <strong>11.40%</strong> compared to 2026, exceeding the approved target ceiling of ₹ 11.50 Cr.</li>
+            <li>95% statistical confidence interval lies between <strong>₹ 11.90 Cr</strong> and <strong>₹ 13.70 Cr</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  if (typeof initForecastCharts === "function") {
+    initForecastCharts();
+  }
+
+  const form = document.getElementById("predictionForm");
+  if (form) {
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (typeof predictMedicalCost === "function") {
+        predictMedicalCost();
+      } else {
+        const errorBox = document.getElementById("predictionError");
+        if (errorBox) {
+          errorBox.textContent = "Prediction script is not loaded. Check static/js/main.js.";
+          errorBox.style.display = "block";
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

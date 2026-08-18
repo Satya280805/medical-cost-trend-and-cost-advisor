@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Trend2Action Platform - Home{% endblock %}
+
+{% block content %}
+<div class="landing-view">
+  <!-- Top Bar with User Profile Dropdown or Sign In / Register Links -->
+  <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 20px;">
+    {% if current_user and current_user.is_authenticated %}
+    <!-- User Profile Photo Avatar with Clickable Dropdown -->
+    <div class="user-profile-dropdown-wrapper">
+      <button type="button" class="user-avatar-btn" id="userProfileBtn" onclick="toggleProfileDropdown(event)" title="Account menu">
+        <i class="fa-solid fa-user"></i>
+      </button>
+
+      <div class="profile-dropdown-menu" id="profileDropdownMenu">
+        <div class="dropdown-user-header">
+          <div class="dropdown-avatar-circle">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="dropdown-user-info">
+            <div class="dropdown-user-name">{{ current_user.username | default(session.get('user_name', 'User')) }}</div>
+            <div class="dropdown-user-email"><i class="fa-solid fa-envelope"></i> {{ current_user.username | default(session.get('user_name', 'user')) }}@medical.com</div>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a href="{{ url_for('dashboard') }}" class="dropdown-item">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('logout') }}" class="dropdown-item dropdown-item-logout">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <a href="{{ url_for('login') }}" class="btn-primary" style="background: transparent; color: var(--accent-blue); border: 1px solid var(--accent-blue); box-shadow: none; padding: 8px 18px; font-size: 13.5px;">
+      <i class="fa-solid fa-right-to-bracket"></i>
+      <span>Sign In</span>
+    </a>
+    <a href="{{ url_for('signup') }}" class="btn-primary" style="padding: 8px 18px; font-size: 13.5px;">
+      <i class="fa-solid fa-user-plus"></i>
+      <span>Create Account</span>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <div class="hero-text">
+      <h1 class="hero-title">Trend2Action<br>Platform</h1>
+      <p class="hero-subtitle">
+        Forecast future medical costs, identify cost drivers, and get AI-powered cost-containment recommendations.
+      </p>
+    </div>
+    <div class="hero-art">
+      <svg class="doctor-illustration" viewBox="0 0 320 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="160" cy="140" r="110" fill="#EEF2FF" />
+        <rect x="250" y="40" width="30" height="30" rx="6" fill="#3B82F6" opacity="0.8" />
+        <path d="M265 48V62M258 55H272" stroke="white" stroke-width="3" stroke-linecap="round" />
+        <!-- Doctor Silhouette / Illustration -->
+        <path d="M120 230C120 185 140 170 160 170C180 170 200 185 200 230" fill="#FFFFFF" stroke="#3B82F6" stroke-width="4" />
+        <path d="M135 175L145 230M185 175L175 230" stroke="#CBD5E1" stroke-width="3" />
+        <rect x="146" y="110" width="28" height="28" rx="8" fill="#FCD34D" />
+        <!-- Head -->
+        <circle cx="160" cy="100" r="28" fill="#FDE68A" />
+        <!-- Hair -->
+        <path d="M136 96C136 78 145 68 160 68C175 68 184 78 184 96C184 96 178 84 160 84C142 84 136 96 136 96Z" fill="#1E293B" />
+        <!-- Mask / Stethoscope -->
+        <path d="M148 135C148 150 152 165 160 165C168 165 172 150 172 135" stroke="#0EA5E9" stroke-width="3" fill="none" />
+        <circle cx="160" cy="168" r="5" fill="#0EA5E9" />
+        <!-- Clipboard -->
+        <rect x="110" y="135" width="38" height="50" rx="4" fill="#0F172A" transform="rotate(-10 110 135)" />
+        <rect x="115" y="142" width="28" height="36" rx="2" fill="#FFFFFF" transform="rotate(-10 115 142)" />
+        <line x1="120" y1="150" x2="136" y2="147" stroke="#94A3B8" stroke-width="2" />
+        <line x1="121" y1="156" x2="137" y2="153" stroke="#94A3B8" stroke-width="2" />
+        <line x1="122" y1="162" x2="134" y2="160" stroke="#94A3B8" stroke-width="2" />
+        <!-- Sparkles / Plus -->
+        <circle cx="95" cy="90" r="4" fill="#3B82F6" opacity="0.6" />
+        <circle cx="230" cy="180" r="6" fill="#10B981" opacity="0.5" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Feature Cards Grid -->
+  <div class="feature-cards-grid">
+    <!-- Card 1 -->
+    <div class="feature-card">
+      <div class="feature-icon-box icon-blue">
+        <i class="fa-solid fa-chart-line"></i>
+      </div>
+      <h3>Forecast Future Costs</h3>
+      <p>Predict medical costs for 2027 with confidence intervals and growth projections.</p>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="feature-card">
+      <div class="feature-icon-box icon-green">
+        <i class="fa-solid fa-code-fork"></i>
+      </div>
+      <h3>Identify Cost Drivers</h3>
+      <p>Detect key factors driving costs using advanced analytics and SHAP explainability.</p>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="feature-card">
+      <div class="feature-icon-box icon-orange">
+        <i class="fa-solid fa-lightbulb"></i>
+      </div>
+      <h3>Get Recommendations</h3>
+      <p>Receive actionable cost-containment recommendations with potential savings.</p>
+    </div>
+  </div>
+
+  <!-- Call to Action Button -->
+  <div class="cta-center">
+    <a href="{{ url_for('dashboard') }}" class="btn-primary">
+      <span>Explore Dashboard</span>
+      <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </div>
+</div>
+{% endblock %}
