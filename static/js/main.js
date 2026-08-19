@@ -792,6 +792,14 @@ async function initDriversCharts() {
 
     const data = await response.json();
 
+    console.log('Driver trend data:', data);
+
+    // Destroy an existing chart if one already exists
+    const existingChart = Chart.getChart(drvCtx);
+    if (existingChart) {
+      existingChart.destroy();
+    }
+
     new Chart(drvCtx, {
       type: 'line',
 
@@ -806,7 +814,9 @@ async function initDriversCharts() {
             backgroundColor: '#2563eb',
             borderWidth: 2.5,
             pointRadius: 4,
-            tension: 0.3
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: false
           },
 
           {
@@ -816,7 +826,9 @@ async function initDriversCharts() {
             backgroundColor: '#10b981',
             borderWidth: 2.5,
             pointRadius: 4,
-            tension: 0.3
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: false
           },
 
           {
@@ -826,7 +838,9 @@ async function initDriversCharts() {
             backgroundColor: '#8b5cf6',
             borderWidth: 2.5,
             pointRadius: 4,
-            tension: 0.3
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: false
           },
 
           {
@@ -836,7 +850,9 @@ async function initDriversCharts() {
             backgroundColor: '#f59e0b',
             borderWidth: 2.5,
             pointRadius: 4,
-            tension: 0.3
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: false
           },
 
           {
@@ -846,7 +862,9 @@ async function initDriversCharts() {
             backgroundColor: '#06b6d4',
             borderWidth: 2.5,
             pointRadius: 4,
-            tension: 0.3
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: false
           }
         ]
       },
@@ -855,32 +873,54 @@ async function initDriversCharts() {
         responsive: true,
         maintainAspectRatio: false,
 
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+
         plugins: {
           legend: {
-            position: 'top'
+            display: true,
+            position: 'top',
+
+            labels: {
+              usePointStyle: true,
+              boxWidth: 10,
+              padding: 15,
+              font: {
+                size: 11
+              }
+            }
           },
 
           tooltip: {
             callbacks: {
               label: (ctx) =>
-                `${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)} index`
+                `${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}`
             }
           }
         },
 
         scales: {
+
           y: {
+            beginAtZero: false,
+
             min: 80,
-            max: 140,
+            max: 300,
 
             ticks: {
-              stepSize: 10,
+              stepSize: 20,
+
               callback: (value) => `${value}`
             },
 
             title: {
               display: true,
-              text: 'Driver Trend Index (Base Year = 100)'
+              text: 'Driver Trend Index (Base Year = 100)',
+              font: {
+                size: 11
+              }
             },
 
             grid: {
@@ -891,6 +931,10 @@ async function initDriversCharts() {
           x: {
             grid: {
               display: false
+            },
+
+            ticks: {
+              autoSkip: false
             }
           }
         }
