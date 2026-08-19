@@ -90,26 +90,30 @@
     <div class="card">
       <div class="card-header">
         <div class="card-title">Medical Cost Trend</div>
-        <div class="card-subtitle">
+        <!-- <div class="card-subtitle">
           <span style="display:inline-block; width:10px; height:10px; background:#2563eb; border-radius:50%; margin-right:4px;"></span> Actual
           <span style="display:inline-block; width:10px; height:10px; background:#93c5fd; border-radius:50%; margin: 0 4px 0 12px;"></span> Forecast
-        </div>
+        </div> -->
       </div>
       <div style="height: 250px;">
         <canvas id="costTrendChart"></canvas>
       </div>
     </div>
-
-    <!-- Drivers Contribution Donut -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Cost Drivers Contribution</div>
-      </div>
-      <div style="height: 250px; position: relative;">
-        <canvas id="driversDonutChart"></canvas>
+<!-- Medical Cost Share by Drug Category -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Medical Cost Share by Drug Category</div>
+      <div class="card-subtitle">
+        Share of total medical cost across drug categories
       </div>
     </div>
   </div>
+
+  <div style="height: 250px; position: relative;">
+    <canvas id="driversDonutChart"></canvas>
+  </div>
+</div>
 
   <!-- Bottom Row: Dedicated Warning Pane & Insights -->
   <div class="grid-2">
@@ -133,7 +137,6 @@
           High-cost specialty drugs (+15% YoY) and inpatient site-of-care shifts indicate an upcoming <strong style="color: #9a3412;">₹ 1.30 Cr (+11.3%)</strong> budget variance. Action recommended before budget overrun becomes irreversible.
         </p>
         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-          <a href="{{ url_for('what_if') }}" class="btn-primary" style="background: #ea580c; padding: 7px 14px; font-size: 12px; border-radius: var(--radius-sm); text-decoration: none; box-shadow: none; display: inline-flex; align-items: center; gap: 6px;">
             <span>Simulate Levers</span>
             <i class="fa-solid fa-arrow-right"></i>
           </a>

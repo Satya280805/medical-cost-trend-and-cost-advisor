@@ -608,11 +608,17 @@
       <div style="display: flex; flex-direction: column; gap: 20px;">
         <div class="card">
           <div class="card-header">
-            <div class="card-title" id="chartCardTitle">Monthly Trend Curve (2027)</div>
+            <div class="card-title" id="chartCardTitle">Historical Medical Cost vs Forecast</div>
             <div class="card-subtitle">
-              <span class="forecast-dot forecast-dot-blue"></span> Forecast
-              <span class="forecast-dot forecast-dot-light" style="margin-left: 10px;"></span> 95% Confidence Band
-            </div>
+  <span class="forecast-dot forecast-dot-blue"></span>
+  Actual
+
+  <span
+    class="forecast-dot forecast-dot-light"
+    style="margin-left: 14px;"
+  ></span>
+  Forecast
+</div>
           </div>
           <div style="height: 240px;">
             <canvas id="forecastHorizonChart"></canvas>
@@ -638,21 +644,31 @@
 
 {% block extra_scripts %}
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
+
+  if (typeof loadMacroForecastData === "function") {
+    await loadMacroForecastData();
+  }
+
   if (typeof initForecastCharts === "function") {
     initForecastCharts();
   }
 
   const form = document.getElementById("predictionForm");
+
   if (form) {
     form.addEventListener("submit", function (event) {
       event.preventDefault();
+
       if (typeof predictMedicalCost === "function") {
         predictMedicalCost();
       } else {
         const errorBox = document.getElementById("predictionError");
+
         if (errorBox) {
-          errorBox.textContent = "Prediction script is not loaded. Check static/js/main.js.";
+          errorBox.textContent =
+            "Prediction script is not loaded. Check static/js/main.js.";
+
           errorBox.style.display = "block";
         }
       }

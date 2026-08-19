@@ -5,16 +5,38 @@ import joblib
 import socket
 import numpy as np
 import pandas as pd
+from sqlalchemy import create_engine
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "medical-intelligence-secret-key-2024")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ============================================================
+# MYSQL DATABASE CONNECTION
+# ============================================================
+
+DB_USER = "root"
+DB_PASSWORD = "satya"
+DB_HOST = "localhost"
+DB_PORT = 3306
+DB_NAME = "trend2action"
+
+engine = create_engine(
+    f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@"
+    f"{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
+print("[*] MySQL database connection configured.")
 
 # ============================================================
 # FLASK CONFIGURATION & IN-MEMORY USER STORE (NO DB REQUIRED)
 # ============================================================
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "medical-intelligence-secret-key-2024")
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "medical_data_set_extended.csv")
@@ -282,15 +304,6 @@ def advisor():
     return render_template("advisor.html", active_page="advisor")
 
 
-@app.route("/what-if", methods=["GET", "POST"])
-@app.route("/what_if", methods=["GET", "POST"])
-@app.route("/whatif", methods=["GET", "POST"])
-@app.route("/what_if.html", methods=["GET", "POST"])
-@login_required
-def what_if():
-    """What-If Scenario Simulation Page"""
-    return render_template("what_if.html", active_page="what_if")
-
 
 @app.route("/logout", methods=["GET", "POST"])
 def logout():
@@ -332,7 +345,499 @@ def api_metrics():
     """Returns platform summary metrics"""
     return jsonify(DEFAULT_METRICS)
 
+@app.route("/api/analytics/cost-trend", methods=["GET"])
+@login_required
+def api_cost_trend():
+    """Returns average medical cost by year from MySQL."""
 
+    query = """
+        SELECT
+            YEAR(month) AS year,
+            AVG(monthly_medical_cost) AS avg_cost
+        FROM medical_cost_data
+        GROUP BY YEAR(month)
+        ORDER BY YEAR(month)
+    """
+
+    data = pd.read_sql(query, engine)
+
+    return jsonify({
+        "years": data["year"].astype(int).tolist(),
+        "costs": data["avg_cost"].round(2).tolist()
+    })
+
+@app.route("/api/analytics/driver-trend", methods=["GET"])
+@login_required
+def api_driver_trend():
+    """Returns normalized driver trend indices from MySQL."""
+
+    query = """
+        SELECT
+            YEAR(month) AS year,
+
+            AVG(
+                CASE
+                    WHEN drug_category = 'High-Cost Specialty'
+                    THEN drug_cost
+                    ELSE 0
+                END
+            ) AS specialty_drugs,
+
+            AVG(
+                doctor_visits
+                + emergency_visits
+                + hospital_admissions
+            ) AS utilization,
+
+            AVG(provider_mix_index) AS provider_mix,
+
+            AVG(unit_cost) AS unit_cost,
+
+            AVG(emergency_visits) AS er_utilization
+
+        FROM medical_cost_data
+
+        GROUP BY YEAR(month)
+        ORDER BY YEAR(month)
+    """
+
+    data = pd.read_sql(query, engine)
+
+    # First year becomes the baseline index = 100
+    for column in [
+        "specialty_drugs",
+        "utilization",
+        "provider_mix",
+        "unit_cost",
+        "er_utilization"
+    ]:
+        base = data[column].iloc[0]
+
+        if base and base != 0:
+            data[column] = (data[column] / base) * 100
+        else:
+            data[column] = 100
+
+    return jsonify({
+        "years": data["year"].astype(int).tolist(),
+        "specialty": data["specialty_drugs"].round(1).tolist(),
+        "utilization": data["utilization"].round(1).tolist(),
+        "provider_mix": data["provider_mix"].round(1).tolist(),
+        "unit_cost": data["unit_cost"].round(1).tolist(),
+        "er_utilization": data["er_utilization"].round(1).tolist()
+    })
+
+@app.route("/api/analytics/drug-cost-share", methods=["GET"])
+@login_required
+def api_drug_cost_share():
+    """Returns medical cost share by drug category from MySQL."""
+
+    query = """
+        SELECT
+            drug_category,
+            SUM(monthly_medical_cost) AS total_cost
+        FROM medical_cost_data
+        GROUP BY drug_category
+        ORDER BY total_cost DESC
+    """
+
+    data = pd.read_sql(query, engine)
+
+    total = data["total_cost"].sum()
+
+    if total == 0:
+        return jsonify({
+            "labels": [],
+            "values": []
+        })
+
+    data["share"] = (data["total_cost"] / total) * 100
+
+    return jsonify({
+        "labels": data["drug_category"].fillna("Unknown").tolist(),
+        "values": data["share"].round(2).tolist()
+    })
+
+@app.route("/api/analytics/site-of-care-cost", methods=["GET"])
+@login_required
+def api_site_of_care_cost():
+    """Returns average medical cost by site of care."""
+
+    query = """
+        SELECT
+            site_of_care,
+            AVG(monthly_medical_cost) AS avg_cost
+        FROM medical_cost_data
+        GROUP BY site_of_care
+        ORDER BY avg_cost DESC
+    """
+
+    data = pd.read_sql(query, engine)
+
+    return jsonify({
+        "labels": data["site_of_care"].fillna("Unknown").tolist(),
+        "values": data["avg_cost"].round(2).tolist()
+    })
+
+
+@app.route("/api/analytics/top-drivers", methods=["GET"])
+@login_required
+def api_top_drivers():
+    """
+    Returns normalized model-derived importance for the
+    major medical cost driver groups.
+    """
+
+    try:
+        if deployment_bundle is None or model is None:
+            return jsonify({
+                "specialty": 0,
+                "utilization": 0,
+                "site": 0,
+                "provider": 0,
+                "unit": 0
+            })
+
+        # Stacking model contains the fitted base estimators
+        rf_model = None
+        gb_model = None
+
+        if hasattr(model, "named_estimators_"):
+            rf_model = model.named_estimators_.get("rf")
+            gb_model = model.named_estimators_.get("gb")
+
+        feature_names = deployment_bundle.get("feature_names", [])
+
+        # Get feature importance from available tree models
+        importance_arrays = []
+
+        if rf_model is not None and hasattr(rf_model, "feature_importances_"):
+            importance_arrays.append(rf_model.feature_importances_)
+
+        if gb_model is not None and hasattr(gb_model, "feature_importances_"):
+            importance_arrays.append(gb_model.feature_importances_)
+
+        if not importance_arrays:
+            return jsonify({
+                "specialty": 0,
+                "utilization": 0,
+                "site": 0,
+                "provider": 0,
+                "unit": 0
+            })
+
+        # Average RF + GB importance
+        importance = np.mean(importance_arrays, axis=0)
+
+        feature_importance = pd.DataFrame({
+            "feature": feature_names,
+            "importance": importance
+        })
+
+        # --------------------------------------------------------
+        # Aggregate features into business-level driver groups
+        # --------------------------------------------------------
+
+        def group_importance(keywords):
+            mask = feature_importance["feature"].str.lower().apply(
+                lambda x: any(k in x for k in keywords)
+            )
+            return feature_importance.loc[mask, "importance"].sum()
+
+        specialty = group_importance([
+            "drug",
+            "pharmacy",
+            "specialty",
+            "generic_rate"
+        ])
+
+        utilization = group_importance([
+            "doctor_visits",
+            "hospital_admissions",
+            "emergency_visits",
+            "specialist_visits",
+            "lab_tests",
+            "medication_count",
+            "utilization_score",
+            "length_of_stay"
+        ])
+
+        site = group_importance([
+            "site_of_care"
+        ])
+
+        provider = group_importance([
+            "provider_type",
+            "provider_mix"
+        ])
+
+        unit = group_importance([
+            "unit_cost"
+        ])
+
+        values = np.array([
+            specialty,
+            utilization,
+            site,
+            provider,
+            unit
+        ], dtype=float)
+
+        # Remove negative/invalid values
+        values = np.maximum(values, 0)
+
+        total = values.sum()
+
+        if total <= 0:
+            percentages = np.zeros(5)
+        else:
+            percentages = (values / total) * 100
+
+        return jsonify({
+            "specialty": round(float(percentages[0]), 2),
+            "utilization": round(float(percentages[1]), 2),
+            "site": round(float(percentages[2]), 2),
+            "provider": round(float(percentages[3]), 2),
+            "unit": round(float(percentages[4]), 2)
+        })
+
+    except Exception as e:
+        print(f"[!] Top driver analysis error: {e}")
+
+        return jsonify({
+            "specialty": 0,
+            "utilization": 0,
+            "site": 0,
+            "provider": 0,
+            "unit": 0
+        })
+
+@app.route("/api/analytics/driver-impact", methods=["GET"])
+@login_required
+def api_driver_impact():
+    """Returns average medical cost impact by major driver."""
+
+    query = """
+        SELECT
+            AVG(drug_cost) AS specialty_drugs,
+            AVG(
+                doctor_visits
+                + emergency_visits
+                + hospital_admissions
+                + specialist_visits
+            ) AS utilization,
+            AVG(
+                CASE
+                    WHEN site_of_care = 'Inpatient'
+                    THEN monthly_medical_cost
+                    ELSE 0
+                END
+            ) AS site_of_care,
+            AVG(provider_mix_index) AS provider_mix,
+            AVG(unit_cost) AS unit_cost,
+            AVG(
+                CASE
+                    WHEN generic_rate > 0.70
+                    THEN drug_cost * 0.10
+                    ELSE 0
+                END
+            ) AS generic_offset
+        FROM medical_cost_data
+    """
+
+    data = pd.read_sql(query, engine).iloc[0]
+
+    return jsonify({
+        "specialty": round(float(data["specialty_drugs"] or 0), 2),
+        "utilization": round(float(data["utilization"] or 0), 2),
+        "site": round(float(data["site_of_care"] or 0), 2),
+        "provider": round(float(data["provider_mix"] or 0), 2),
+        "unit": round(float(data["unit_cost"] or 0), 2),
+        "generic": round(float(data["generic_offset"] or 0), 2)
+    })
+
+@app.route("/api/analytics/forecast-summary", methods=["GET"])
+@login_required
+def api_forecast_summary():
+    """
+    Returns forecast summary using the deployed ML model.
+    """
+
+    try:
+        if model is None:
+            return jsonify({"error": "ML model not loaded"}), 500
+
+        # Use the latest available records from MySQL
+        query = """
+            SELECT *
+            FROM medical_cost_data
+            ORDER BY month DESC
+            LIMIT 1
+        """
+
+        latest = pd.read_sql(query, engine)
+
+        if latest.empty:
+            return jsonify({"error": "No data available"}), 404
+
+        raw_record = latest.iloc[0].to_dict()
+
+        # Reuse the same prediction logic
+        df_new = pd.DataFrame([raw_record])
+
+        default_row = {
+            "age": 45,
+            "bmi": 27.5,
+            "gender": "Male",
+            "smoking_status": "Never",
+            "physical_activity": "Moderate",
+            "stress_level": "Low",
+            "diabetes": 0,
+            "hypertension": 0,
+            "heart_disease": 0,
+            "asthma": 0,
+            "daily_steps": 6500,
+            "sleep_hours": 7.0,
+            "doctor_visits": 3,
+            "hospital_admissions": 1,
+            "emergency_visits": 0,
+            "specialist_visits": 2,
+            "lab_tests": 4,
+            "medication_count": 3,
+            "average_length_of_stay_days": 2.0,
+            "insurance_type": "Private",
+            "insurance_coverage_percent": 80.0,
+            "city_type": "Urban",
+            "previous_year_medical_cost": 60000.0,
+            "out_of_network_rate": 10.0,
+            "generic_rate": 75.0,
+            "pharmacy_spend": 5000.0,
+            "site_of_care": "Outpatient",
+            "provider_type": "Hospital",
+            "provider_mix_index": 1.1,
+            "unit_cost": 1000.0,
+            "drug_category": "Generic",
+            "drug_cost": 500.0
+        }
+
+        for col, value in default_row.items():
+            if col not in df_new.columns or pd.isna(df_new[col].iloc[0]):
+                df_new[col] = value
+
+        df_new["comorbidity_score"] = (
+            df_new["diabetes"].astype(float)
+            + df_new["hypertension"].astype(float)
+            + df_new["heart_disease"].astype(float)
+            + df_new["asthma"].astype(float)
+        )
+
+        df_new["utilization_score"] = (
+            df_new["doctor_visits"].astype(float)
+            + df_new["specialist_visits"].astype(float) * 2
+            + df_new["emergency_visits"].astype(float) * 4
+            + df_new["hospital_admissions"].astype(float) * 6
+        )
+
+        df_new["cost_per_med"] = (
+            df_new["pharmacy_spend"].astype(float)
+            / (df_new["medication_count"].astype(float) + 1)
+        )
+
+        df_new["drug_spend_ratio"] = (
+            df_new["drug_cost"].astype(float)
+            / (df_new["pharmacy_spend"].astype(float) + 1)
+        )
+
+        df_new["oon_exposure"] = (
+            df_new["out_of_network_rate"].astype(float) / 100
+        ) * df_new["previous_year_medical_cost"].astype(float)
+
+        df_new["oop_exposure"] = (
+            (100 - df_new["insurance_coverage_percent"].astype(float)) / 100
+        ) * df_new["previous_year_medical_cost"].astype(float)
+
+        df_new["bmi_age_interaction"] = (
+            df_new["bmi"].astype(float) / 25
+        ) * (
+            df_new["age"].astype(float) / 50
+        )
+
+        df_new["cardio_hypertension"] = (
+            df_new["heart_disease"].astype(float)
+            * df_new["hypertension"].astype(float)
+        )
+
+        cat_cols = deployment_bundle.get("categorical_cols", [])
+        num_cols = deployment_bundle.get("numeric_cols", [])
+        feature_names = deployment_bundle.get("feature_names", [])
+
+        for col in num_cols:
+            if col not in df_new.columns:
+                df_new[col] = 0.0
+            else:
+                df_new[col] = pd.to_numeric(
+                    df_new[col], errors="coerce"
+                ).fillna(0.0)
+
+        encoded = encoder.transform(df_new[cat_cols])
+
+        encoded_df = pd.DataFrame(
+            encoded,
+            columns=encoder.get_feature_names_out(cat_cols)
+        )
+
+        X_new = pd.concat(
+            [df_new[num_cols], encoded_df],
+            axis=1
+        ).reindex(
+            columns=feature_names,
+            fill_value=0
+        )
+
+        predicted = float(
+            model.predict(
+                scaler.transform(X_new)
+            )[0]
+        )
+
+        return jsonify({
+            "latest_year": int(pd.to_datetime(raw_record["month"]).year),
+            "predicted_cost": round(predicted, 2)
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/analytics/macro-forecast", methods=["GET"])
+@login_required
+def api_macro_forecast():
+    """
+    Returns historical annual medical cost data
+    in Crores from MySQL.
+    """
+
+    try:
+        query = """
+            SELECT
+                YEAR(month) AS year,
+                SUM(monthly_medical_cost) / 10000000 AS total_cost
+            FROM medical_cost_data
+            GROUP BY YEAR(month)
+            ORDER BY YEAR(month)
+        """
+
+        data = pd.read_sql(query, engine)
+
+        return jsonify({
+            "years": data["year"].astype(int).tolist(),
+            "actual_costs": data["total_cost"].round(2).tolist()
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+                
 @app.route("/api/budget-variance", methods=["GET"])
 def api_budget_variance():
     """

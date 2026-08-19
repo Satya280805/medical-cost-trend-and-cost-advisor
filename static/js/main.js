@@ -4,121 +4,207 @@
 let costComparisonChartInstance = null;
 
 // Dashboard Charts
-function initDashboardCharts() {
+async function initDashboardCharts() {
+
+  // ============================================================
+  // COST TREND CHART - DATA FROM MYSQL
+  // ============================================================
+
   const trendCtx = document.getElementById('costTrendChart');
+
   if (trendCtx) {
-    new Chart(trendCtx, {
-      type: 'line',
-      data: {
-        labels: ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
-        datasets: [
-          {
-            label: 'Actual',
-            data: [6.2, 7.8, 9.4, null, null, null, null, null],
+
+    try {
+
+      const response = await fetch('/api/analytics/cost-trend');
+
+      if (!response.ok) {
+        throw new Error('Failed to load cost trend data');
+      }
+
+      const data = await response.json();
+
+      new Chart(trendCtx, {
+        type: 'line',
+
+        data: {
+          labels: data.years,
+
+          datasets: [{
+            label: 'Average Medical Cost',
+            data: data.costs,
+
             borderColor: '#2563eb',
             backgroundColor: '#2563eb',
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.2
-          },
-          {
-            label: 'Forecast',
-            data: [null, null, 9.4, 10.8, 12.8, 14.5, 16.4, 18.6],
-            borderColor: '#60a5fa',
-            backgroundColor: '#60a5fa',
-            borderDash: [5, 5],
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.2
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ₹ ${ctx.raw} Cr`
-            }
-          }
-        },
-        scales: {
-          y: {
-            min: 0,
-            max: 22,
-            ticks: {
-              stepSize: 4,
-              callback: (val) => `${val}`
-            },
-            title: {
-              display: true,
-              text: 'Cost (₹ Cr)',
-              font: { size: 11, weight: '500' }
-            },
-            grid: { color: '#f1f5f9' }
-          },
-          x: {
-            grid: { display: false }
-          }
-        }
-      }
-    });
-  }
 
-  const donutCtx = document.getElementById('driversDonutChart');
-  if (donutCtx) {
-    new Chart(donutCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Utilization', 'Drugs', 'Provider Mix', 'Unit Cost', 'Other'],
-        datasets: [{
-          data: [32, 27, 18, 14, 9],
-          backgroundColor: [
-            '#0284c7', // Utilization (Blue)
-            '#10b981', // Drugs (Green)
-            '#8b5cf6', // Provider Mix (Purple)
-            '#f59e0b', // Unit Cost (Orange)
-            '#64748b'  // Other (Slate)
-          ],
-          borderWidth: 2,
-          borderColor: '#ffffff',
-          hoverOffset: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '62%',
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: {
-              boxWidth: 12,
-              usePointStyle: true,
-              pointStyle: 'circle',
-              font: { size: 11, family: "'Inter', sans-serif" },
-              generateLabels: (chart) => {
-                const data = chart.data;
-                return data.labels.map((label, i) => {
-                  const val = data.datasets[0].data[i];
-                  return {
-                    text: `${label}   ${val}%`,
-                    fillStyle: data.datasets[0].backgroundColor[i],
-                    strokeStyle: data.datasets[0].backgroundColor[i],
-                    index: i
-                  };
-                });
+            borderWidth: 2.5,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.2
+          }]
+        },
+
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+
+          plugins: {
+            legend: {
+              display: false
+            },
+
+            tooltip: {
+              callbacks: {
+                label: (ctx) =>
+                  `Average Cost: ₹ ${Number(ctx.raw).toFixed(2)}`
+              }
+            }
+          },
+
+          scales: {
+            y: {
+              beginAtZero: true,
+
+              title: {
+                display: true,
+                text: 'Average Medical Cost',
+                font: {
+                  size: 11,
+                  weight: '500'
+                }
+              },
+
+              ticks: {
+                callback: (val) => `₹ ${val}`
+              },
+
+              grid: {
+                color: '#f1f5f9'
+              }
+            },
+
+            x: {
+              grid: {
+                display: false
+              },
+
+              title: {
+                display: true,
+                text: 'Year'
               }
             }
           }
         }
-      }
-    });
+      });
+
+    } catch (error) {
+
+      console.error('Cost trend chart error:', error);
+
+    }
   }
+
+  // ============================================================
+  // DRUG COST SHARE DONUT - DATA FROM MYSQL
+  // ============================================================
+
+  const donutCtx = document.getElementById('driversDonutChart');
+
+  if (donutCtx) {
+
+    try {
+
+      const response = await fetch('/api/analytics/drug-cost-share');
+
+      if (!response.ok) {
+        throw new Error('Failed to load drug cost share data');
+      }
+
+      const data = await response.json();
+
+      new Chart(donutCtx, {
+        type: 'doughnut',
+
+        data: {
+          labels: data.labels,
+
+          datasets: [{
+            data: data.values,
+
+            backgroundColor: [
+              '#0284c7',
+              '#10b981',
+              '#8b5cf6',
+              '#f59e0b',
+              '#64748b',
+              '#ef4444'
+            ],
+
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 4
+          }]
+        },
+
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+
+          plugins: {
+            legend: {
+              position: 'right',
+
+              labels: {
+                boxWidth: 12,
+                usePointStyle: true,
+                pointStyle: 'circle',
+
+                font: {
+                  size: 11,
+                  family: "'Inter', sans-serif"
+                },
+
+                generateLabels: (chart) => {
+
+                  const chartData = chart.data;
+
+                  return chartData.labels.map((label, i) => {
+
+                    const value = chartData.datasets[0].data[i];
+
+                    return {
+                      text: `${label}   ${value.toFixed(1)}%`,
+                      fillStyle:
+                        chartData.datasets[0].backgroundColor[i],
+                      strokeStyle:
+                        chartData.datasets[0].backgroundColor[i],
+                      index: i
+                    };
+
+                  });
+
+                }
+              }
+            },
+
+            tooltip: {
+              callbacks: {
+                label: (ctx) =>
+                  `${ctx.label}: ${ctx.raw.toFixed(2)}%`
+              }
+            }
+          }
+        }
+      });
+
+    } catch (error) {
+
+      console.error('Drug cost share chart error:', error);
+
+    }
+  }
+
 }
 
 // Global Forecast Horizon Chart Reference & Multi-Year Data Store
@@ -224,6 +310,55 @@ function getMacroYearData(year) {
   };
 }
 
+async function loadForecastSummary() {
+  try {
+    const response = await fetch('/api/analytics/forecast-summary');
+
+    if (!response.ok) {
+      throw new Error('Failed to load forecast summary');
+    }
+
+    const data = await response.json();
+
+    console.log('Model forecast:', data);
+
+    const forecastValue =
+      document.getElementById('kpiTotalForecastValue');
+
+    if (forecastValue) {
+      forecastValue.innerText =
+        `₹ ${Number(data.predicted_cost).toFixed(2)} Cr`;
+    }
+
+  } catch (error) {
+    console.error('Forecast summary error:', error);
+  }
+}
+
+async function loadMacroForecastData() {
+
+  try {
+
+    const response = await fetch('/api/analytics/macro-forecast');
+
+    if (!response.ok) {
+      throw new Error('Failed to load macro forecast data');
+    }
+
+    const data = await response.json();
+
+    console.log('Historical macro data:', data);
+
+    // Store for later use by the forecast page
+    window.macroHistoricalData = data;
+
+  } catch (error) {
+
+    console.error('Macro forecast data error:', error);
+
+  }
+}
+
 function getMonthlyMacroData(year) {
   const yData = getMacroYearData(year);
   const total = yData.total;
@@ -244,85 +379,132 @@ function getMonthlyMacroData(year) {
 }
 
 // Forecast Horizon Chart
-function initForecastCharts() {
+async function initForecastCharts() {
+
   const fcCtx = document.getElementById('forecastHorizonChart');
-  if (fcCtx) {
-    const monthlyData = getMonthlyMacroData(currentMacroYear);
-    const forecastVals = monthlyData.map(m => m.forecast);
-    const upperVals = monthlyData.map(m => m.upper);
-    const lowerVals = monthlyData.map(m => m.lower);
 
-    const minVal = Math.floor(Math.min(...lowerVals) * 10) / 10 - 0.1;
-    const maxVal = Math.ceil(Math.max(...upperVals) * 10) / 10 + 0.1;
+  if (!fcCtx) return;
 
-    forecastHorizonChartInstance = new Chart(fcCtx, {
-      type: 'line',
-      data: {
-        labels: MONTH_SHORTS,
-        datasets: [
-          {
-            label: 'Upper Band',
-            data: upperVals,
-            borderColor: 'transparent',
-            pointRadius: 0,
-            fill: '+1',
-            backgroundColor: 'rgba(191, 219, 254, 0.45)'
-          },
-          {
-            label: 'Forecast',
-            data: forecastVals,
-            borderColor: '#2563eb',
-            backgroundColor: '#2563eb',
-            borderWidth: 2.5,
-            pointRadius: 3,
-            pointHoverRadius: 6,
-            fill: false,
-            tension: 0.3
-          },
-          {
-            label: 'Lower Band',
-            data: lowerVals,
-            borderColor: 'transparent',
-            pointRadius: 0,
-            fill: false
+  // Get actual historical data from MySQL
+  let historicalYears = [];
+  let historicalCosts = [];
+
+  if (window.macroHistoricalData) {
+    historicalYears = window.macroHistoricalData.years || [];
+    historicalCosts = window.macroHistoricalData.actual_costs || [];
+  }
+
+  // Existing forward forecast values
+  const forecastYears = [2026, 2027, 2028, 2029, 2030];
+  const forecastCosts = forecastYears.map(
+    year => getMacroYearData(year).total
+  );
+
+  // Combine actual + forecast years
+  const labels = [
+    ...historicalYears,
+    ...forecastYears.filter(
+      year => !historicalYears.includes(year)
+    )
+  ];
+
+  const actualData = labels.map(year => {
+  const index = historicalYears.indexOf(year);
+  return index !== -1 ? historicalCosts[index] : null;
+});
+
+const lastActualYear = historicalYears[historicalYears.length - 1];
+const lastActualCost = historicalCosts[historicalCosts.length - 1];
+
+const forecastData = labels.map(year => {
+
+  // Connect forecast to the last actual point
+  if (year === lastActualYear) {
+    return lastActualCost;
+  }
+
+  const index = forecastYears.indexOf(year);
+
+  return index !== -1 ? forecastCosts[index] : null;
+});
+
+  forecastHorizonChartInstance = new Chart(fcCtx, {
+    type: 'line',
+
+    data: {
+      labels: labels,
+
+      datasets: [
+        {
+          label: 'Actual',
+          data: actualData,
+          borderColor: '#2563eb',
+          backgroundColor: '#2563eb',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.2
+        },
+
+        {
+          label: 'Forecast',
+          data: forecastData,
+          borderColor: '#60a5fa',
+          backgroundColor: '#60a5fa',
+          borderDash: [5, 5],
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.2
+        }
+      ]
+    },
+
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
+      plugins: {
+        legend: {
+          position: 'top'
+        },
+
+        tooltip: {
+          callbacks: {
+            label: (ctx) =>
+              `${ctx.dataset.label}: ₹ ${Number(ctx.raw).toFixed(2)} Cr`
           }
-        ]
+        }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: ₹ ${ctx.raw} Cr`
-            }
+
+      scales: {
+        y: {
+          beginAtZero: true,
+
+          title: {
+            display: true,
+            text: 'Medical Cost (₹ Cr)'
+          },
+
+          grid: {
+            color: '#f1f5f9'
           }
         },
-        scales: {
-          y: {
-            min: Math.max(0, minVal),
-            max: maxVal,
-            ticks: {
-              stepSize: 0.2,
-              callback: (val) => `${val.toFixed(1)}`
-            },
-            title: {
-              display: true,
-              text: 'Cost (₹ Cr)',
-              font: { size: 11 }
-            },
-            grid: { color: '#f1f5f9' }
-          },
-          x: {
-            grid: { display: false }
+
+        x: {
+          grid: {
+            display: false
           }
         }
       }
-    });
+    }
+   });
 
-    updateMacroForecastHorizon(currentMacroYear, currentMacroMonth);
-  }
+  // Populate the monthly table, KPIs and summary
+  updateMacroForecastHorizon(
+    currentMacroYear,
+    currentMacroMonth
+  );
 }
 
 // Controller to dynamically update year, month, table, KPIs and Chart
@@ -418,25 +600,11 @@ function updateMacroForecastHorizon(year, monthFilter = 'all') {
   }
 
   // 5. Update Chart Title & Data
+    // 5. Keep the chart as Historical Actual vs Forecast
   const chartTitleEl = document.getElementById('chartCardTitle');
-  if (chartTitleEl) chartTitleEl.innerText = `Monthly Trend Curve (${currentMacroYear})`;
 
-  if (forecastHorizonChartInstance) {
-    const forecastVals = monthlyList.map(m => m.forecast);
-    const upperVals = monthlyList.map(m => m.upper);
-    const lowerVals = monthlyList.map(m => m.lower);
-
-    const minVal = Math.floor(Math.min(...lowerVals) * 10) / 10 - 0.1;
-    const maxVal = Math.ceil(Math.max(...upperVals) * 10) / 10 + 0.1;
-
-    forecastHorizonChartInstance.data.datasets[0].data = upperVals;
-    forecastHorizonChartInstance.data.datasets[1].data = forecastVals;
-    forecastHorizonChartInstance.data.datasets[2].data = lowerVals;
-
-    forecastHorizonChartInstance.options.scales.y.min = Math.max(0, parseFloat(minVal.toFixed(1)));
-    forecastHorizonChartInstance.options.scales.y.max = parseFloat(maxVal.toFixed(1));
-
-    forecastHorizonChartInstance.update();
+  if (chartTitleEl) {
+    chartTitleEl.innerText = 'Historical Medical Cost vs Forecast';
   }
 }
 
@@ -490,69 +658,87 @@ function selectMacroMonthFromTable(monthIdx) {
 // COST DRIVERS HORIZON YEAR DYNAMIC CONTROLS
 // ============================================================
 
-const driverYearData = {
-  2026: {
-    specPct: 31, utilPct: 26, sitePct: 16, provPct: 14, unitPct: 11,
-    specImpact: '+₹ 24.50 L', utilImpact: '+₹ 21.00 L', siteImpact: '+₹ 13.50 L', provImpact: '+₹ 11.50 L', unitImpact: '+₹ 9.00 L', genImpact: '-₹ 8.50 L',
-    takeaway: 'Specialty drug share and utilization are the primary baseline drivers contributing to <strong>~57%</strong> of projected 2026 cost escalation.'
-  },
-  2027: {
-    specPct: 32, utilPct: 27, sitePct: 16, provPct: 14, unitPct: 11,
-    specImpact: '+₹ 42.00 L', utilImpact: '+₹ 31.00 L', siteImpact: '+₹ 24.50 L', provImpact: '+₹ 19.00 L', unitImpact: '+₹ 15.00 L', genImpact: '-₹ 14.80 L',
-    takeaway: 'Specialty drug share and utilization are the top drivers of cost increase and contribute to <strong>~59%</strong> of the total projected cost increase in 2027.'
-  },
-  2028: {
-    specPct: 33, utilPct: 27, sitePct: 17, provPct: 14, unitPct: 11,
-    specImpact: '+₹ 58.00 L', utilImpact: '+₹ 43.50 L', siteImpact: '+₹ 34.00 L', provImpact: '+₹ 26.50 L', unitImpact: '+₹ 21.00 L', genImpact: '-₹ 20.50 L',
-    takeaway: 'Compound biologics and outpatient shifts expand specialty and utilization share to <strong>~60%</strong> of projected 2028 cost increase.'
-  },
-  2029: {
-    specPct: 34, utilPct: 28, sitePct: 17, provPct: 14, unitPct: 11,
-    specImpact: '+₹ 78.50 L', utilImpact: '+₹ 59.00 L', siteImpact: '+₹ 46.00 L', provImpact: '+₹ 35.50 L', unitImpact: '+₹ 28.00 L', genImpact: '-₹ 27.50 L',
-    takeaway: 'By 2029, escalating chronic disease prevalence drives specialty and utilization to <strong>~62%</strong> of uncontained medical cost variance.'
-  },
-  2030: {
-    specPct: 35, utilPct: 28, sitePct: 18, provPct: 14, unitPct: 11,
-    specImpact: '+₹ 104.00 L', utilImpact: '+₹ 78.00 L', siteImpact: '+₹ 61.00 L', provImpact: '+₹ 46.50 L', unitImpact: '+₹ 37.00 L', genImpact: '-₹ 36.50 L',
-    takeaway: 'Long-term 2030 forecast projects specialty therapeutics and acute utilization will account for <strong>~63%</strong> of cumulative cost variance (+₹ 7.80 Cr over baseline).'
+
+async function loadDriverImpactData() {
+
+  try {
+
+    const response = await fetch('/api/analytics/driver-impact');
+
+    if (!response.ok) {
+      throw new Error('Failed to load driver impact data');
+    }
+
+    const data = await response.json();
+
+    const mappings = [
+      ['impactSpecVal', data.specialty, true],
+      ['impactUtilVal', data.utilization, true],
+      ['impactSiteVal', data.site, true],
+      ['impactProvVal', data.provider, true],
+      ['impactUnitVal', data.unit, true],
+      ['impactGenVal', data.generic, false]
+    ];
+
+    mappings.forEach(([id, value, positive]) => {
+
+      const el = document.getElementById(id);
+
+      if (!el) return;
+
+      const sign = positive ? '+' : '-';
+
+      el.innerText = `${sign}₹ ${Number(value).toFixed(2)} L`;
+
+    });
+
+  } catch (error) {
+
+    console.error('Driver impact data error:', error);
+
   }
-};
+}
 
-function setDriverHorizonYear(year, btnEl) {
-  const container = document.getElementById('driverYearChips');
-  if (container) {
-    container.querySelectorAll('.btn-tier-filter').forEach(b => b.classList.remove('active'));
+
+async function loadTopDriverData() {
+
+  try {
+
+    const response = await fetch('/api/analytics/top-drivers');
+
+    if (!response.ok) {
+      throw new Error('Failed to load top driver data');
+    }
+
+    const data = await response.json();
+
+    const drivers = [
+      ['pctSpecVal', 'barSpecVal', data.specialty],
+      ['pctUtilVal', 'barUtilVal', data.utilization],
+      ['pctSiteVal', 'barSiteVal', data.site],
+      ['pctProvVal', 'barProvVal', data.provider],
+      ['pctUnitVal', 'barUnitVal', data.unit]
+    ];
+
+    drivers.forEach(([pctId, barId, value]) => {
+
+      const pctEl = document.getElementById(pctId);
+      const barEl = document.getElementById(barId);
+
+      if (pctEl) {
+        pctEl.innerText = `${value}%`;
+      }
+
+      if (barEl) {
+        barEl.style.width = `${Math.min(value, 100)}%`;
+      }
+    });
+
+  } catch (error) {
+
+    console.error('Top driver data error:', error);
+
   }
-  if (btnEl) btnEl.classList.add('active');
-
-  const d = driverYearData[year] || driverYearData[2027];
-
-  const sub = document.getElementById('topDriversYearSubtitle');
-  if (sub) sub.innerText = `(Contribution to ${year} Cost Increase)`;
-
-  const title = document.getElementById('driverMonetaryImpactTitle');
-  if (title) title.innerText = `Driver Monetary Impact for ${year} (₹)`;
-
-  function updateDriver(pctId, barId, impactId, pctVal, impactVal) {
-    const pEl = document.getElementById(pctId);
-    const bEl = document.getElementById(barId);
-    const iEl = document.getElementById(impactId);
-    if (pEl) pEl.innerText = `${pctVal}%`;
-    if (bEl) bEl.style.width = `${pctVal}%`;
-    if (iEl) iEl.innerText = impactVal;
-  }
-
-  updateDriver('pctSpecVal', 'barSpecVal', 'impactSpecVal', d.specPct, d.specImpact);
-  updateDriver('pctUtilVal', 'barUtilVal', 'impactUtilVal', d.utilPct, d.utilImpact);
-  updateDriver('pctSiteVal', 'barSiteVal', 'impactSiteVal', d.sitePct, d.siteImpact);
-  updateDriver('pctProvVal', 'barProvVal', 'impactProvVal', d.provPct, d.provImpact);
-  updateDriver('pctUnitVal', 'barUnitVal', 'impactUnitVal', d.unitPct, d.unitImpact);
-
-  const genEl = document.getElementById('impactGenVal');
-  if (genEl) genEl.innerText = d.genImpact;
-
-  const takeawayEl = document.getElementById('driversKeyTakeaway');
-  if (takeawayEl) takeawayEl.innerHTML = d.takeaway;
 }
 
 // ============================================================
@@ -590,95 +776,207 @@ function setAdvisorHorizonYear(year, btnEl) {
 }
 
 // Drivers Charts
-function initDriversCharts() {
+async function initDriversCharts() {
+
   const drvCtx = document.getElementById('driverTrendChart');
-  if (drvCtx) {
+
+  if (!drvCtx) return;
+
+  try {
+
+    const response = await fetch('/api/analytics/driver-trend');
+
+    if (!response.ok) {
+      throw new Error('Failed to load driver trend data');
+    }
+
+    const data = await response.json();
+
     new Chart(drvCtx, {
       type: 'line',
+
       data: {
-        labels: ['2023', '2024', '2025', '2026', '2027(F)', '2028(F)', '2029(F)', '2030(F)'],
+        labels: data.years,
+
         datasets: [
           {
             label: 'Specialty Drugs',
-            data: [18, 21, 24, 28, 32, 36, 40, 44],
+            data: data.specialty,
             borderColor: '#2563eb',
             backgroundColor: '#2563eb',
-            borderWidth: 2,
+            borderWidth: 2.5,
             pointRadius: 4,
             tension: 0.3
           },
+
           {
             label: 'Utilization',
-            data: [24, 25, 26, 26.5, 27, 27.5, 28, 28.5],
+            data: data.utilization,
             borderColor: '#10b981',
             backgroundColor: '#10b981',
-            borderWidth: 2,
+            borderWidth: 2.5,
             pointRadius: 4,
             tension: 0.3
           },
+
           {
             label: 'Provider Mix',
-            data: [14, 15, 16, 17, 18, 19, 20, 21],
+            data: data.provider_mix,
             borderColor: '#8b5cf6',
             backgroundColor: '#8b5cf6',
-            borderWidth: 2,
+            borderWidth: 2.5,
             pointRadius: 4,
             tension: 0.3
           },
+
           {
             label: 'Unit Cost',
-            data: [12, 13, 13.5, 14, 14, 14.5, 15, 15.5],
+            data: data.unit_cost,
             borderColor: '#f59e0b',
             backgroundColor: '#f59e0b',
-            borderWidth: 2,
+            borderWidth: 2.5,
             pointRadius: 4,
             tension: 0.3
           },
+
           {
             label: 'ER Utilization',
-            data: [7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5],
+            data: data.er_utilization,
             borderColor: '#06b6d4',
             backgroundColor: '#06b6d4',
-            borderWidth: 2,
+            borderWidth: 2.5,
             pointRadius: 4,
             tension: 0.3
           }
         ]
       },
+
       options: {
         responsive: true,
         maintainAspectRatio: false,
+
         plugins: {
           legend: {
-            position: 'top',
-            labels: {
-              boxWidth: 10,
-              usePointStyle: true,
-              font: { size: 11, family: "'Inter', sans-serif" }
+            position: 'top'
+          },
+
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)} index`
             }
           }
         },
+
         scales: {
           y: {
-            min: 0,
-            max: 40,
+            min: 80,
+            max: 140,
+
             ticks: {
               stepSize: 10,
-              callback: (val) => `${val}%`
+              callback: (value) => `${value}`
             },
+
             title: {
               display: true,
-              text: 'Cost Contribution (%)',
-              font: { size: 11 }
+              text: 'Driver Trend Index (Base Year = 100)'
             },
-            grid: { color: '#f1f5f9' }
+
+            grid: {
+              color: '#f1f5f9'
+            }
           },
+
           x: {
-            grid: { display: false }
+            grid: {
+              display: false
+            }
           }
         }
       }
     });
+
+  } catch (error) {
+
+    console.error('Driver trend chart error:', error);
+
+  }
+}
+
+
+async function loadSiteOfCareCostChart() {
+
+  const ctx = document.getElementById('siteOfCareCostChart');
+
+  if (!ctx) return;
+
+  try {
+
+    const response = await fetch('/api/analytics/site-of-care-cost');
+
+    if (!response.ok) {
+      throw new Error('Failed to load site-of-care data');
+    }
+
+    const data = await response.json();
+
+    new Chart(ctx, {
+      type: 'bar',
+
+      data: {
+        labels: data.labels,
+
+        datasets: [{
+          label: 'Average Medical Cost',
+          data: data.values,
+          borderRadius: 5
+        }]
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        plugins: {
+          legend: {
+            display: false
+          },
+
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `Average Cost: ₹ ${Number(ctx.raw).toFixed(2)}`
+            }
+          }
+        },
+
+        scales: {
+          y: {
+            beginAtZero: true,
+
+            title: {
+              display: true,
+              text: 'Average Medical Cost'
+            }
+          },
+
+          x: {
+            title: {
+              display: true,
+              text: 'Site of Care'
+            },
+
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Site-of-care chart error:', error);
   }
 }
 

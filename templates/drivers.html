@@ -13,15 +13,9 @@
     <div class="header-meta" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
       <!-- Dynamic Horizon Year Selector -->
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Horizon Year:</span>
-        <div style="display: flex; gap: 5px;" id="driverYearChips">
-          <button type="button" class="btn-tier-filter" data-driver-year="2026" onclick="setDriverHorizonYear(2026, this)">2026</button>
-          <button type="button" class="btn-tier-filter active" data-driver-year="2027" onclick="setDriverHorizonYear(2027, this)">2027</button>
-          <button type="button" class="btn-tier-filter" data-driver-year="2028" onclick="setDriverHorizonYear(2028, this)">2028</button>
-          <button type="button" class="btn-tier-filter" data-driver-year="2029" onclick="setDriverHorizonYear(2029, this)">2029</button>
-          <button type="button" class="btn-tier-filter" data-driver-year="2030" onclick="setDriverHorizonYear(2030, this)">2030</button>
-        </div>
-      </div>
+<div style="font-size: 12px; color: #64748b;">
+  Based on current medical cost data and model-derived driver importance
+</div>      </div>
 
       <button type="button" class="btn-primary" onclick="window.print()" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 7px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
         <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i>
@@ -55,13 +49,37 @@
   </div>
 
   <!-- Top Grid: Top Drivers Bars & Driver Impact List -->
-  <div class="grid-2">
+  <div
+  class="grid-2"
+  style="
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 20px;
+    align-items: start;
+  "
+>
     <!-- Top Cost Drivers -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Top Cost Drivers <span style="font-size: 12px; font-weight: normal; color: var(--text-secondary);" id="topDriversYearSubtitle">(Contribution to 2027 Cost Increase)</span></div>
-      </div>
-      <div class="progress-list">
+    <div class="card" style="display: block;">
+
+  <div class="card-header" style="display: block; margin-bottom: 18px;">
+    <div class="card-title">
+      Top Cost Drivers
+      <span
+        style="font-size: 12px; font-weight: normal; color: var(--text-secondary);"
+        id="topDriversYearSubtitle">
+        (Model-Derived Importance)
+      </span>
+    </div>
+  </div>
+      <div
+  class="progress-list"
+  style="
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+  "
+>
         <a href="{{ url_for('advisor') }}?driver=specialty" class="progress-item" style="text-decoration: none; color: inherit; display: block; padding: 6px 8px; border-radius: var(--radius-sm); transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'" title="Click to view Specialty Rx containment strategies">
           <div class="progress-label-row">
             <span>High-Cost Specialty Drugs <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 11px; color: var(--accent-blue); margin-left: 4px;"></i></span>
@@ -117,47 +135,64 @@
     <!-- Driver Impact -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title" id="driverMonetaryImpactTitle">Driver Monetary Impact for 2027 (₹)</div>
+        <div class="card-title" id="driverMonetaryImpactTitle">Current Driver Cost Signals</div>
       </div>
       <div class="impact-table">
         <a href="{{ url_for('advisor') }}?driver=specialty" class="impact-table-row" style="text-decoration: none; color: inherit;" title="Explore Specialty Rx levers">
           <span>High-Cost Specialty Drugs <i class="fa-solid fa-arrow-right" style="font-size: 10px; color: #94a3b8; margin-left: 4px;"></i></span>
-          <span class="impact-val-pos" id="impactSpecVal">+₹ 42.00 L</span>
+          <span class="impact-val-pos" id="impactSpecVal">Loading...</span>
         </a>
         <a href="{{ url_for('advisor') }}?driver=utilization" class="impact-table-row" style="text-decoration: none; color: inherit;" title="Explore Utilization levers">
           <span>Utilization Shifts <i class="fa-solid fa-arrow-right" style="font-size: 10px; color: #94a3b8; margin-left: 4px;"></i></span>
-          <span class="impact-val-pos" id="impactUtilVal">+₹ 31.00 L</span>
+          <span class="impact-val-pos" id="impactUtilVal">Loading...</span>
         </a>
         <a href="{{ url_for('advisor') }}?driver=site_of_care" class="impact-table-row" style="text-decoration: none; color: inherit;" title="Explore Site-of-Care levers">
           <span>Site-of-Care Inpatient Shift <i class="fa-solid fa-arrow-right" style="font-size: 10px; color: #94a3b8; margin-left: 4px;"></i></span>
-          <span class="impact-val-pos" id="impactSiteVal">+₹ 24.50 L</span>
+          <span class="impact-val-pos" id="impactSiteVal">Loading...</span>
         </a>
         <a href="{{ url_for('advisor') }}?driver=provider_mix" class="impact-table-row" style="text-decoration: none; color: inherit;" title="Explore Provider Mix levers">
           <span>Provider Mix Shifts <i class="fa-solid fa-arrow-right" style="font-size: 10px; color: #94a3b8; margin-left: 4px;"></i></span>
-          <span class="impact-val-pos" id="impactProvVal">+₹ 19.00 L</span>
+          <span class="impact-val-pos" id="impactProvVal">Loading...</span>
         </a>
         <a href="{{ url_for('advisor') }}?driver=unit_cost" class="impact-table-row" style="text-decoration: none; color: inherit;" title="Explore Unit Cost levers">
           <span>Unit Cost Changes <i class="fa-solid fa-arrow-right" style="font-size: 10px; color: #94a3b8; margin-left: 4px;"></i></span>
-          <span class="impact-val-pos" id="impactUnitVal">+₹ 15.00 L</span>
+          <span class="impact-val-pos" id="impactUnitVal">Loading...</span>
         </a>
         <div class="impact-table-row">
           <span>Generic & Biosimilar Usage Offset</span>
-          <span class="impact-val-neg" id="impactGenVal">-₹ 14.80 L</span>
+          <span class="impact-val-neg" id="impactGenVal">Loading...</span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Bottom Grid: Driver Trend Over Time & Key Takeaway -->
-  <div class="grid-2-1">
+  <div
+  class="grid-2-1"
+  style="
+    display: grid;
+    grid-template-columns: 1.65fr 0.9fr;
+    gap: 20px;
+    align-items: stretch;
+  "
+>
     <!-- Driver Trend Over Time Chart -->
     <div class="card">
       <div class="card-header">
-        <div class="card-title">Driver Trend Over Time (2023 - 2030)</div>
+        <div class="card-title">Driver Trend Over Time</div>
+        <div
+  style="
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  "
+>
+  Indexed to the first observed year (100 = baseline)
+</div>
       </div>
-      <div style="height: 250px;">
-        <canvas id="driverTrendChart"></canvas>
-      </div>
+      <div style="height: 340px; position: relative;">
+  <canvas id="driverTrendChart"></canvas>
+</div>
     </div>
 
     <!-- Key Takeaway -->
@@ -165,9 +200,38 @@
       <div class="card-header">
         <div class="card-title">Key Takeaway</div>
       </div>
-      <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-top: 10px;" id="driversKeyTakeaway">
-        Specialty drug share and utilization are the top drivers of cost increase and contribute to <strong>~59%</strong> of the total projected cost increase in 2027.
-      </p>
+      <p
+  style="
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-top: 10px;
+  "
+  id="driversKeyTakeaway"
+>
+  <strong style="color: var(--text-primary); font-size: 14px;">
+    Primary Drivers:
+  </strong>
+  Specialty drugs and healthcare utilization are the leading sources of medical cost pressure, making pharmacy management and acute-care utilization key areas for intervention.
+  <br>
+
+  <strong style="color: var(--text-primary); font-size: 14px;">
+    Secondary Pressure:
+  </strong>
+  Site-of-care patterns and provider mix contribute additional cost escalation, particularly where higher-cost inpatient or specialist services are used more frequently.
+  <br>
+
+  <strong style="color: var(--text-primary); font-size: 14px;">
+    Offset Opportunity:
+  </strong>
+  Greater adoption of generic and biosimilar medicines can help offset pharmacy-related cost growth and improve overall cost efficiency.
+  <br>
+
+  <strong style="color: var(--text-primary); font-size: 14px;">
+    Recommended Focus:
+  </strong>
+  Prioritize specialty-drug optimization, avoidable ER and inpatient utilization reduction, site-of-care management, and provider-network optimization to contain future medical cost escalation.
+</p>
     </div>
   </div>
 </div>
@@ -177,6 +241,8 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     initDriversCharts();
+    loadTopDriverData();
+    loadDriverImpactData();
   });
 </script>
 {% endblock %}
