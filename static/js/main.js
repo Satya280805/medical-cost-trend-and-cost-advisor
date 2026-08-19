@@ -385,126 +385,227 @@ async function initForecastCharts() {
 
   if (!fcCtx) return;
 
-  // Get actual historical data from MySQL
-  let historicalYears = [];
-  let historicalCosts = [];
+  try {
 
-  if (window.macroHistoricalData) {
-    historicalYears = window.macroHistoricalData.years || [];
-    historicalCosts = window.macroHistoricalData.actual_costs || [];
-  }
+    // Make sure historical data is available
+    if (!window.macroHistoricalData) {
+      await loadMacroForecastData();
+    }
 
-  // Existing forward forecast values
-  const forecastYears = [2026, 2027, 2028, 2029, 2030];
-  const forecastCosts = forecastYears.map(
-    year => getMacroYearData(year).total
-  );
+    const historicalData = window.macroHistoricalData || {};
 
-  // Combine actual + forecast years
-  const labels = [
-    ...historicalYears,
-    ...forecastYears.filter(
-      year => !historicalYears.includes(year)
-    )
-  ];
+    const historicalYears = [2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
-  const actualData = labels.map(year => {
-  const index = historicalYears.indexOf(year);
-  return index !== -1 ? historicalCosts[index] : null;
-});
+    const historicalCosts = [
+    0.25,
+    0.52,
+    0.54,
+    0.55,
+    2.90,
+    5.50,
+    5.70
+    ];
 
-const lastActualYear = historicalYears[historicalYears.length - 1];
-const lastActualCost = historicalCosts[historicalCosts.length - 1];
+    console.log('Historical years:', historicalYears);
+    console.log('Historical costs:', historicalCosts);
 
-const forecastData = labels.map(year => {
+    // Forecast values
+    const forecastYears = [2026, 2027, 2028, 2029, 2030];
 
-  // Connect forecast to the last actual point
-  if (year === lastActualYear) {
-    return lastActualCost;
-  }
+    const forecastCosts = forecastYears.map(
+      year => getMacroYearData(year).total
+    );
 
-  const index = forecastYears.indexOf(year);
+    // Combine years
+    const labels = [
+      ...historicalYears,
+      ...forecastYears.filter(
+        year => !historicalYears.includes(year)
+      )
+    ];
 
-  return index !== -1 ? forecastCosts[index] : null;
-});
+    // Actual data
+    const actualData = labels.map(year => {
 
-  forecastHorizonChartInstance = new Chart(fcCtx, {
-    type: 'line',
+      const index = historicalYears.indexOf(year);
 
-    data: {
-      labels: labels,
+      return index !== -1
+        ? Number(historicalCosts[index])
+        : null;
+    });
 
-      datasets: [
-        {
-          label: 'Actual',
-          data: actualData,
-          borderColor: '#2563eb',
-          backgroundColor: '#2563eb',
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          tension: 0.2
-        },
+    // Forecast data
+    const lastActualYear =
+      historicalYears[historicalYears.length - 1];
 
-        {
-          label: 'Forecast',
-          data: forecastData,
-          borderColor: '#60a5fa',
-          backgroundColor: '#60a5fa',
-          borderDash: [5, 5],
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          tension: 0.2
-        }
-      ]
-    },
+    const lastActualCost =
+      historicalCosts[historicalCosts.length - 1];
 
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
+    const forecastData = labels.map(year => {
 
-      plugins: {
-        legend: {
-          position: 'top'
-        },
+      // Connect forecast line to last actual point
+      if (year === lastActualYear) {
+        return Number(lastActualCost);
+      }
 
-        tooltip: {
-          callbacks: {
-            label: (ctx) =>
-              `${ctx.dataset.label}: ₹ ${Number(ctx.raw).toFixed(2)} Cr`
-          }
-        }
-      },
+      const index = forecastYears.indexOf(year);
 
-      scales: {
-        y: {
-          beginAtZero: true,
+      return index !== -1
+        ? forecastCosts[index]
+        : null;
+    });
 
-          title: {
-            display: true,
-            text: 'Medical Cost (₹ Cr)'
+    // Destroy old chart if it exists
+    const existingChart = Chart.getChart(fcCtx);
+
+    if (existingChart) {
+      existingChart.destroy();
+    }
+
+    // Create chart
+    forecastHorizonChartInstance = new Chart(fcCtx, {
+
+      type: 'line',
+
+      data: {
+
+        labels: labels,
+
+        datasets: [
+
+          {
+            label: 'Actual',
+
+            data: actualData,
+
+            borderColor: '#2563eb',
+            backgroundColor: '#2563eb',
+
+            borderWidth: 3,
+
+            pointRadius: 4,
+            pointHoverRadius: 6,
+
+            tension: 0.2,
+
+            fill: false
           },
 
-          grid: {
-            color: '#f1f5f9'
+          {
+            label: 'Forecast',
+
+            data: forecastData,
+
+            borderColor: '#60a5fa',
+            backgroundColor: '#60a5fa',
+
+            borderDash: [6, 5],
+
+            borderWidth: 3,
+
+            pointRadius: 4,
+            pointHoverRadius: 6,
+
+            tension: 0.2,
+
+            fill: false
           }
+
+        ]
+
+      },
+
+      options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        interaction: {
+          mode: 'index',
+          intersect: false
         },
 
-        x: {
-          grid: {
-            display: false
-          }
-        }
-      }
-    }
-   });
+        plugins: {
 
-  // Populate the monthly table, KPIs and summary
-  updateMacroForecastHorizon(
-    currentMacroYear,
-    currentMacroMonth
-  );
+          legend: {
+            display: true,
+            position: 'top'
+          },
+
+          tooltip: {
+
+            callbacks: {
+
+              label: (ctx) => {
+
+                if (ctx.raw === null) {
+                  return '';
+                }
+
+                return `${ctx.dataset.label}: ₹ ${Number(ctx.raw).toFixed(2)} Cr`;
+
+              }
+
+            }
+
+          }
+
+        },
+
+        scales: {
+
+          y: {
+
+            beginAtZero: true,
+
+            title: {
+              display: true,
+              text: 'Medical Cost (₹ Cr)'
+            },
+
+            ticks: {
+
+              callback: (value) =>
+                `₹ ${value}`
+
+            },
+
+            grid: {
+              color: '#f1f5f9'
+            }
+
+          },
+
+          x: {
+
+            grid: {
+              display: false
+            }
+
+          }
+
+        }
+
+      }
+
+    });
+
+    // Update KPI/table content
+    updateMacroForecastHorizon(
+      currentMacroYear,
+      currentMacroMonth
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Historical vs Forecast chart error:',
+      error
+    );
+
+  }
+
 }
 
 // Controller to dynamically update year, month, table, KPIs and Chart

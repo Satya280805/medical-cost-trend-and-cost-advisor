@@ -38,5 +38,10 @@
     "id": 8,
     "username": "admin",
     "password_hash": "scrypt:32768:8:1$yooC2aHIYJYsWWug$e29f860b4765ad679633d6990cfb331f00afd92fa6078f1dd7e61df3f2cfd8c121de353a8b299fa45ea03da59cfb6fbf374e788eebc1cf749e995304fb4659c7"
+  },
+  "satyaa": {
+    "id": 9,
+    "username": "satyaa",
+    "password_hash": "scrypt:32768:8:1$SdgX6sqY7UEKQm5L$f17f8209b7a0d2f47ed5761c9157b656012ba326ab7e2705c66c1db63d746e0cf39226f346232e23b6ea40c1ef7055648754b1d35ad25eca6a2a19f3f378e778"
   }
 }
